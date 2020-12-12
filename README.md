@@ -1,10 +1,10 @@
-[![ContainerSSH - Launch Containers on Demand](https://containerssh.github.io/images/logo-for-embedding.svg)](https://containerssh.github.io/)
+[![ContainerSSH - Launch Containers on Demand](https://containerssh.io/images/logo-for-embedding.svg)](https://containerssh.io/)
 
 <!--suppress HtmlDeprecatedAttribute -->
 <h1 align="center">ContainerSSH Authentication Library</h1>
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/containerssh/library-template?style=for-the-badge)](https://goreportcard.com/report/github.com/containerssh/library-template)
-[![LGTM Alerts](https://img.shields.io/lgtm/alerts/github/ContainerSSH/library-template?style=for-the-badge)](https://lgtm.com/projects/g/ContainerSSH/library-template/)
+[![Go Report Card](https://goreportcard.com/badge/github.com/containerssh/authintegration?style=for-the-badge)](https://goreportcard.com/report/github.com/containerssh/library-template)
+[![LGTM Alerts](https://img.shields.io/lgtm/alerts/github/ContainerSSH/authintegration?style=for-the-badge)](https://lgtm.com/projects/g/ContainerSSH/authintegration/)
 
 This library provides integration between the [sshserver library](https://github.com/containerssh/sshserver) and the [auth library](https://github.com/containerssh/auth)
 
