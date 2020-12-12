@@ -4,18 +4,21 @@ import (
 	"fmt"
 
 	"github.com/containerssh/auth"
+	"github.com/containerssh/log"
 	"github.com/containerssh/sshserver"
 )
 
 // New creates a new handler that authenticates the users with passwords and public keys.
 //goland:noinspection GoUnusedExportedFunction
 func New(
-	authClient auth.Client,
+	config auth.ClientConfig,
 	backend sshserver.Handler,
+	logger log.Logger,
 	behavior Behavior,
 ) (sshserver.Handler, error) {
-	if authClient == nil {
-		return nil, fmt.Errorf("the authClient parameter to authintegration.New cannot be nil")
+	authClient, err := auth.NewHttpAuthClient(config, logger)
+	if err != nil {
+		return nil, err
 	}
 	if backend == nil {
 		return nil, fmt.Errorf("the backend parameter to authintegration.New cannot be nil")
