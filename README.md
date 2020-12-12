@@ -1,7 +1,7 @@
 [![ContainerSSH - Launch Containers on Demand](https://containerssh.github.io/images/logo-for-embedding.svg)](https://containerssh.github.io/)
 
 <!--suppress HtmlDeprecatedAttribute -->
-<h1 align="center">ContainerSSH SSH ****** Library</h1>
+<h1 align="center">ContainerSSH Authentication Library</h1>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/containerssh/library-template?style=for-the-badge)](https://goreportcard.com/report/github.com/containerssh/library-template)
 [![LGTM Alerts](https://img.shields.io/lgtm/alerts/github/ContainerSSH/library-template?style=for-the-badge)](https://lgtm.com/projects/g/ContainerSSH/library-template/)
@@ -26,15 +26,13 @@ For example:
 
 ```go
 handler := authintegration.New(
-    auth.NewHttpAuthClient(
-        auth.ClientConfig{
-            Url: "http://localhost:8080"
-            Password: true,
-            PubKey: false,
-        },
-        logger,
-    ),
+    auth.ClientConfig{
+        Url: "http://localhost:8080"
+        Password: true,
+        PubKey: false,
+    },
     otherHandler,
+    logger,
     authintegration.BehaviorNoPassthrough,
 )
 ```

@@ -56,7 +56,7 @@ func (h *handler) OnShutdown(shutdownContext context.Context) {
 	}
 }
 
-func (h *handler) OnNetworkConnection(client net.TCPAddr, connectionID []byte) (sshserver.NetworkConnectionHandler, error) {
+func (h *handler) OnNetworkConnection(client net.TCPAddr, connectionID string) (sshserver.NetworkConnectionHandler, error) {
 	var backend sshserver.NetworkConnectionHandler = nil
 	var err error
 	if h.backend != nil {
@@ -78,12 +78,12 @@ type networkConnectionHandler struct {
 	backend      sshserver.NetworkConnectionHandler
 	authClient   auth.Client
 	ip           net.IP
-	connectionID []byte
+	connectionID string
 	behavior     Behavior
 }
 
 func (h *networkConnectionHandler) OnAuthPassword(username string, password []byte) (response sshserver.AuthResponse, reason error) {
-	success, err := h.authClient.Password(username, password, []byte(""), h.ip)
+	success, err := h.authClient.Password(username, password, h.connectionID, h.ip)
 	if !success {
 		if err != nil {
 			if h.behavior == BehaviorPassthroughOnUnavailable {
@@ -98,11 +98,12 @@ func (h *networkConnectionHandler) OnAuthPassword(username string, password []by
 	}
 	if h.behavior == BehaviorPassthroughOnSuccess {
 		return h.backend.OnAuthPassword(username, password)
+	} else {
+		return sshserver.AuthResponseSuccess, nil
 	}
-	return h.backend.OnAuthPassword(username, password)
 }
 
-func (h *networkConnectionHandler) OnAuthPubKey(username string, pubKey []byte) (response sshserver.AuthResponse, reason error) {
+func (h *networkConnectionHandler) OnAuthPubKey(username string, pubKey string) (response sshserver.AuthResponse, reason error) {
 	success, err := h.authClient.PubKey(username, pubKey, h.connectionID, h.ip)
 	if !success {
 		if err != nil {
@@ -126,8 +127,8 @@ func (h *networkConnectionHandler) OnHandshakeFailed(reason error) {
 	h.backend.OnHandshakeFailed(reason)
 }
 
-func (h *networkConnectionHandler) OnHandshakeSuccess() (connection sshserver.SSHConnectionHandler, failureReason error) {
-	return h.backend.OnHandshakeSuccess()
+func (h *networkConnectionHandler) OnHandshakeSuccess(username string) (connection sshserver.SSHConnectionHandler, failureReason error) {
+	return h.backend.OnHandshakeSuccess(username)
 }
 
 func (h *networkConnectionHandler) OnDisconnect() {
