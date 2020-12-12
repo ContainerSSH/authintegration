@@ -27,7 +27,7 @@ For example:
 ```go
 handler := authintegration.New(
     auth.ClientConfig{
-        Url: "http://localhost:8080"
+        URL: "http://localhost:8080"
         Password: true,
         PubKey: false,
     },
