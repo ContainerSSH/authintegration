@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/containerssh/auth"
 	"github.com/containerssh/http"
@@ -61,7 +62,7 @@ func startAuthServer(t *testing.T, logger log.Logger) service.Lifecycle {
 	go func() {
 		assert.NoError(t, lifecycle.Run())
 	}()
-	<- ready
+	<-ready
 	return lifecycle
 }
 
@@ -73,7 +74,8 @@ func startSSHServer(t *testing.T, logger log.Logger) (
 	handler, err := authintegration.New(
 		auth.ClientConfig{
 			ClientConfiguration: http.ClientConfiguration{
-				URL: "http://127.0.0.1:8080",
+				URL:     "http://127.0.0.1:8080",
+				Timeout: 10 * time.Second,
 			},
 			Password: true,
 			PubKey:   false,
@@ -130,26 +132,18 @@ func testConnection(t *testing.T, authMethod ssh.AuthMethod, sshServerConfig ssh
 
 // region Backend
 type testBackend struct {
-
+	sshserver.AbstractNetworkConnectionHandler
 }
 
 func (t *testBackend) OnUnsupportedGlobalRequest(_ uint64, _ string, _ []byte) {}
 
 func (t *testBackend) OnUnsupportedChannel(_ uint64, _ string, _ []byte) {}
 
-func (t *testBackend) OnSessionChannel(_ uint64, _ []byte) (
+func (t *testBackend) OnSessionChannel(_ uint64, _ []byte, _ sshserver.SessionChannel) (
 	_ sshserver.SessionChannelHandler,
 	_ sshserver.ChannelRejection,
 ) {
 	return nil, &rejection{}
-}
-
-func (t *testBackend) OnAuthPassword(_ string, _ []byte) (response sshserver.AuthResponse, reason error) {
-	return sshserver.AuthResponseUnavailable, nil
-}
-
-func (t *testBackend) OnAuthPubKey(_ string, _ string) (response sshserver.AuthResponse, reason error) {
-	return sshserver.AuthResponseUnavailable, nil
 }
 
 func (t *testBackend) OnHandshakeFailed(_ error) {}
@@ -181,7 +175,6 @@ func (t *testBackend) OnNetworkConnection(_ net.TCPAddr, _ string) (
 }
 
 type rejection struct {
-
 }
 
 func (r *rejection) Error() string {
@@ -226,4 +219,5 @@ func (h *authHandler) OnPubKey(
 ) (bool, error) {
 	return false, nil
 }
+
 // endregion

@@ -2,6 +2,7 @@ package authintegration
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/containerssh/auth"
@@ -38,6 +39,8 @@ func (behavior Behavior) validate() bool {
 }
 
 type handler struct {
+	sshserver.AbstractHandler
+
 	backend    sshserver.Handler
 	authClient auth.Client
 	behavior   Behavior
@@ -75,6 +78,8 @@ func (h *handler) OnNetworkConnection(client net.TCPAddr, connectionID string) (
 }
 
 type networkConnectionHandler struct {
+	sshserver.AbstractNetworkConnectionHandler
+
 	backend      sshserver.NetworkConnectionHandler
 	authClient   auth.Client
 	ip           net.IP
@@ -121,6 +126,19 @@ func (h *networkConnectionHandler) OnAuthPubKey(username string, pubKey string) 
 		return h.backend.OnAuthPubKey(username, pubKey)
 	}
 	return h.backend.OnAuthPubKey(username, pubKey)
+}
+
+func (h *networkConnectionHandler) OnAuthKeyboardInteractive(
+	username string,
+	challenge func(
+		instruction string,
+		questions sshserver.KeyboardInteractiveQuestions,
+	) (answers sshserver.KeyboardInteractiveAnswers, err error),
+) (response sshserver.AuthResponse, reason error) {
+	if h.behavior == BehaviorPassthroughOnUnavailable {
+		return h.backend.OnAuthKeyboardInteractive(username, challenge)
+	}
+	return sshserver.AuthResponseUnavailable, fmt.Errorf("keyboard-interactive authentication not available")
 }
 
 func (h *networkConnectionHandler) OnHandshakeFailed(reason error) {
