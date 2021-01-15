@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.2: Passing OnShutdown
+
+This release passes the OnShutdown hook to the backend.
+
 ## 0.9.1: Matching sshserver upgrade
 
 This version adds the required changes for the new [sshserver](https://github.com/containerssh/sshserver) library.

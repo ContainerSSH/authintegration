@@ -39,8 +39,6 @@ func (behavior Behavior) validate() bool {
 }
 
 type handler struct {
-	sshserver.AbstractHandler
-
 	backend    sshserver.Handler
 	authClient auth.Client
 	behavior   Behavior
@@ -78,13 +76,15 @@ func (h *handler) OnNetworkConnection(client net.TCPAddr, connectionID string) (
 }
 
 type networkConnectionHandler struct {
-	sshserver.AbstractNetworkConnectionHandler
-
 	backend      sshserver.NetworkConnectionHandler
 	authClient   auth.Client
 	ip           net.IP
 	connectionID string
 	behavior     Behavior
+}
+
+func (h *networkConnectionHandler) OnShutdown(shutdownContext context.Context) {
+	h.backend.OnShutdown(shutdownContext)
 }
 
 func (h *networkConnectionHandler) OnAuthPassword(username string, password []byte) (response sshserver.AuthResponse, reason error) {
