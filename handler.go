@@ -2,10 +2,10 @@ package authintegration
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/containerssh/auth"
+	"github.com/containerssh/log"
 	"github.com/containerssh/sshserver"
 )
 
@@ -125,7 +125,7 @@ func (h *networkConnectionHandler) OnAuthPubKey(username string, pubKey string) 
 	if h.behavior == BehaviorPassthroughOnSuccess {
 		return h.backend.OnAuthPubKey(username, pubKey)
 	}
-	return h.backend.OnAuthPubKey(username, pubKey)
+	return sshserver.AuthResponseSuccess, nil
 }
 
 func (h *networkConnectionHandler) OnAuthKeyboardInteractive(
@@ -138,7 +138,11 @@ func (h *networkConnectionHandler) OnAuthKeyboardInteractive(
 	if h.behavior == BehaviorPassthroughOnUnavailable {
 		return h.backend.OnAuthKeyboardInteractive(username, challenge)
 	}
-	return sshserver.AuthResponseUnavailable, fmt.Errorf("keyboard-interactive authentication not available")
+	return sshserver.AuthResponseUnavailable, log.UserMessage(
+		EUnsupported,
+		"keyboard-interactive authentication not available",
+		"Keyboard-interactive authentication is not supported by ContainerSSH.",
+	).Label("connectionId", h.connectionID).Label("username", username)
 }
 
 func (h *networkConnectionHandler) OnHandshakeFailed(reason error) {

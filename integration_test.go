@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net"
-	"os"
 	"testing"
 	"time"
 
@@ -21,15 +20,7 @@ import (
 )
 
 func TestAuthentication(t *testing.T) {
-	logger, err := log.New(
-		log.Config{
-			Level:  log.LevelDebug,
-			Format: log.FormatText,
-		},
-		"auth",
-		os.Stdout,
-	)
-	assert.NoError(t, err)
+	logger := log.NewTestLogger(t)
 
 	authLifecycle := startAuthServer(t, logger)
 	defer authLifecycle.Stop(context.Background())

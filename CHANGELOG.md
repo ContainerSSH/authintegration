@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.3: Better logging
+
+This release adds better logging to the keyboard-interactive authentication.
+
 ## 0.9.2: Passing OnShutdown
 
 This release passes the OnShutdown hook to the backend.
