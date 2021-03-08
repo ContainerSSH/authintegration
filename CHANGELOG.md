@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.4: Metrics support for auth
+
+This version adds metrics support for auth.
+
 ## 0.9.3: Better logging
 
 This release adds better logging to the keyboard-interactive authentication.

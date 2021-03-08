@@ -5,6 +5,7 @@ import (
 
 	"github.com/containerssh/auth"
 	"github.com/containerssh/log"
+	"github.com/containerssh/metrics"
 	"github.com/containerssh/sshserver"
 )
 
@@ -14,9 +15,10 @@ func New(
 	config auth.ClientConfig,
 	backend sshserver.Handler,
 	logger log.Logger,
+	metricsCollector metrics.Collector,
 	behavior Behavior,
 ) (sshserver.Handler, error) {
-	authClient, err := auth.NewHttpAuthClient(config, logger)
+	authClient, err := auth.NewHttpAuthClient(config, logger, metricsCollector)
 	if err != nil {
 		return nil, err
 	}
