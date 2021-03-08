@@ -8,8 +8,10 @@ import (
 	"time"
 
 	"github.com/containerssh/auth"
+	"github.com/containerssh/geoip"
 	"github.com/containerssh/http"
 	"github.com/containerssh/log"
+	"github.com/containerssh/metrics"
 	"github.com/containerssh/service"
 	"github.com/containerssh/sshserver"
 	"github.com/containerssh/structutils"
@@ -62,6 +64,10 @@ func startSSHServer(t *testing.T, logger log.Logger) (
 	service.Lifecycle,
 ) {
 	backend := &testBackend{}
+	geoipLookup, _ := geoip.New(geoip.Config{
+		Provider: "dummy",
+	})
+	collector := metrics.New(geoipLookup)
 	handler, err := authintegration.New(
 		auth.ClientConfig{
 			ClientConfiguration: http.ClientConfiguration{
@@ -73,6 +79,7 @@ func startSSHServer(t *testing.T, logger log.Logger) (
 		},
 		backend,
 		logger,
+		collector,
 		authintegration.BehaviorNoPassthrough,
 	)
 	assert.NoError(t, err)
