@@ -9,13 +9,10 @@ require (
 	github.com/containerssh/log v0.9.13
 	github.com/containerssh/metrics v0.9.8
 	github.com/containerssh/service v0.9.3
-	github.com/containerssh/sshserver v0.9.20
+	github.com/containerssh/sshserver v0.9.25
 	github.com/containerssh/structutils v0.9.0
-	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/mattn/go-shellwords v1.0.11 // indirect
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
-	golang.org/x/sys v0.0.0-20210316164454-77fc1eacc6aa // indirect
 )
 
 // Fixes CVE-2020-9283
