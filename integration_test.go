@@ -141,7 +141,7 @@ func (t *testBackend) OnSessionChannel(_ uint64, _ []byte, _ sshserver.SessionCh
 	_ sshserver.SessionChannelHandler,
 	_ sshserver.ChannelRejection,
 ) {
-	return nil, &rejection{}
+	return nil, sshserver.NewChannelRejection(ssh.UnknownChannelType, log.MTest, "not supported", "not supported")
 }
 
 func (t *testBackend) OnHandshakeFailed(_ error) {}
@@ -170,21 +170,6 @@ func (t *testBackend) OnNetworkConnection(_ net.TCPAddr, _ string) (
 	error,
 ) {
 	return t, nil
-}
-
-type rejection struct {
-}
-
-func (r *rejection) Error() string {
-	return "not implemented"
-}
-
-func (r *rejection) Message() string {
-	return "not implemented"
-}
-
-func (r *rejection) Reason() ssh.RejectionReason {
-	return ssh.UnknownChannelType
 }
 
 // endregion
