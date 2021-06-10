@@ -5,14 +5,12 @@ go 1.14
 require (
 	github.com/containerssh/auth v1.0.0
 	github.com/containerssh/geoip v1.0.0
-	github.com/containerssh/http v1.0.0
-	github.com/containerssh/log v1.0.0
+	github.com/containerssh/http v1.2.0
+	github.com/containerssh/log v1.1.3
 	github.com/containerssh/metrics v1.0.0
 	github.com/containerssh/service v1.0.0
 	github.com/containerssh/sshserver v1.0.0
 	github.com/containerssh/structutils v1.0.0
-	github.com/imdario/mergo v0.3.12 // indirect
-	github.com/mattn/go-shellwords v1.0.11 // indirect
 	github.com/stretchr/testify v1.7.0
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 )
