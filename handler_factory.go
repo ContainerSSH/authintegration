@@ -3,10 +3,11 @@ package authintegration
 import (
 	"fmt"
 
-	"github.com/containerssh/auth"
+	"github.com/containerssh/auth/v2"
 	"github.com/containerssh/log"
 	"github.com/containerssh/metrics"
-	"github.com/containerssh/sshserver"
+	"github.com/containerssh/service"
+	sshserver "github.com/containerssh/sshserver/v2"
 )
 
 // New creates a new handler that authenticates the users with passwords and public keys.
@@ -17,20 +18,20 @@ func New(
 	logger log.Logger,
 	metricsCollector metrics.Collector,
 	behavior Behavior,
-) (sshserver.Handler, error) {
-	authClient, err := auth.NewHttpAuthClient(config, logger, metricsCollector)
+) (sshserver.Handler, service.Service, error) {
+	authClient, srv, err := auth.NewClient(config, logger, metricsCollector)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if backend == nil {
-		return nil, fmt.Errorf("the backend parameter to authintegration.New cannot be nil")
+		return nil, nil, fmt.Errorf("the backend parameter to authintegration.New cannot be nil")
 	}
 	if !behavior.validate() {
-		return nil, fmt.Errorf("the behavior field contains an invalid value: %d", behavior)
+		return nil, nil, fmt.Errorf("the behavior field contains an invalid value: %d", behavior)
 	}
 	return &handler{
 		authClient: authClient,
 		backend:    backend,
 		behavior:   behavior,
-	}, nil
+	}, srv, nil
 }

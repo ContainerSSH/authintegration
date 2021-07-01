@@ -7,17 +7,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/containerssh/auth"
 	"github.com/containerssh/geoip"
 	"github.com/containerssh/http"
 	"github.com/containerssh/log"
 	"github.com/containerssh/metrics"
 	"github.com/containerssh/service"
-	"github.com/containerssh/sshserver"
+	sshserver "github.com/containerssh/sshserver/v2"
 	"github.com/containerssh/structutils"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/ssh"
 
+	"github.com/containerssh/auth/v2"
 	"github.com/containerssh/authintegration"
 )
 
@@ -68,14 +68,17 @@ func startSSHServer(t *testing.T, logger log.Logger) (
 		Provider: "dummy",
 	})
 	collector := metrics.New(geoipLookup)
-	handler, err := authintegration.New(
+	handler, _, err := authintegration.New(
 		auth.ClientConfig{
-			ClientConfiguration: http.ClientConfiguration{
-				URL:     "http://127.0.0.1:8080",
-				Timeout: 10 * time.Second,
+			Method: auth.MethodWebhook,
+			Webhook: auth.WebhookClientConfig{
+				ClientConfiguration: http.ClientConfiguration{
+					URL:     "http://127.0.0.1:8080",
+					Timeout: 10 * time.Second,
+				},
+				Password: true,
+				PubKey:   false,
 			},
-			Password: true,
-			PubKey:   false,
 		},
 		backend,
 		logger,

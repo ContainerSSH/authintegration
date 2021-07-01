@@ -4,12 +4,12 @@ import (
 	"context"
 	"net"
 
-	"github.com/containerssh/auth"
-	"github.com/containerssh/log"
-	"github.com/containerssh/sshserver"
+	sshserver "github.com/containerssh/sshserver/v2"
+
+	"github.com/containerssh/auth/v2"
 )
 
-// Behavior dictactes how when the authentication requests are passed to the backends.
+// Behavior dictates how when the authentication requests are passed to the backends.
 type Behavior int
 
 const (
@@ -81,51 +81,60 @@ type networkConnectionHandler struct {
 	ip           net.IP
 	connectionID string
 	behavior     Behavior
+	authContext  auth.AuthenticationContext
 }
 
 func (h *networkConnectionHandler) OnShutdown(shutdownContext context.Context) {
 	h.backend.OnShutdown(shutdownContext)
 }
 
-func (h *networkConnectionHandler) OnAuthPassword(username string, password []byte) (response sshserver.AuthResponse, reason error) {
-	success, err := h.authClient.Password(username, password, h.connectionID, h.ip)
-	if !success {
-		if err != nil {
+func (h *networkConnectionHandler) OnAuthPassword(username string, password []byte, clientVersion string) (response sshserver.AuthResponse, metadata map[string]string, reason error) {
+	if h.authContext != nil {
+		h.authContext.OnDisconnect()
+	}
+	authContext := h.authClient.Password(username, password, h.connectionID, h.ip)
+	h.authContext = authContext
+	if !authContext.Success() {
+		if authContext.Error() != nil {
 			if h.behavior == BehaviorPassthroughOnUnavailable {
-				return h.backend.OnAuthPassword(username, password)
+				return h.backend.OnAuthPassword(username, password, clientVersion)
 			}
-			return sshserver.AuthResponseUnavailable, err
+			return sshserver.AuthResponseUnavailable, nil, authContext.Error()
 		}
 		if h.behavior == BehaviorPassthroughOnFailure {
-			return h.backend.OnAuthPassword(username, password)
+			return h.backend.OnAuthPassword(username, password, clientVersion)
 		}
-		return sshserver.AuthResponseFailure, nil
+		return sshserver.AuthResponseFailure, nil, nil
 	}
 	if h.behavior == BehaviorPassthroughOnSuccess {
-		return h.backend.OnAuthPassword(username, password)
+		return h.backend.OnAuthPassword(username, password, clientVersion)
 	} else {
-		return sshserver.AuthResponseSuccess, nil
+		return sshserver.AuthResponseSuccess, authContext.Metadata(), nil
 	}
 }
 
-func (h *networkConnectionHandler) OnAuthPubKey(username string, pubKey string) (response sshserver.AuthResponse, reason error) {
-	success, err := h.authClient.PubKey(username, pubKey, h.connectionID, h.ip)
-	if !success {
-		if err != nil {
+func (h *networkConnectionHandler) OnAuthPubKey(username string, pubKey string, clientVersion string) (response sshserver.AuthResponse, metadata map[string]string, reason error) {
+	if h.authContext != nil {
+		h.authContext.OnDisconnect()
+	}
+	authContext := h.authClient.PubKey(username, pubKey, h.connectionID, h.ip)
+	h.authContext = authContext
+	if !authContext.Success() {
+		if authContext.Error() != nil {
 			if h.behavior == BehaviorPassthroughOnUnavailable {
-				return h.backend.OnAuthPubKey(username, pubKey)
+				return h.backend.OnAuthPubKey(username, pubKey, clientVersion)
 			}
-			return sshserver.AuthResponseUnavailable, err
+			return sshserver.AuthResponseUnavailable, authContext.Metadata(), authContext.Error()
 		}
 		if h.behavior == BehaviorPassthroughOnFailure {
-			return h.backend.OnAuthPubKey(username, pubKey)
+			return h.backend.OnAuthPubKey(username, pubKey, clientVersion)
 		}
-		return sshserver.AuthResponseFailure, nil
+		return sshserver.AuthResponseFailure, authContext.Metadata(), authContext.Error()
 	}
 	if h.behavior == BehaviorPassthroughOnSuccess {
-		return h.backend.OnAuthPubKey(username, pubKey)
+		return h.backend.OnAuthPubKey(username, pubKey, clientVersion)
 	}
-	return sshserver.AuthResponseSuccess, nil
+	return sshserver.AuthResponseSuccess, authContext.Metadata(), authContext.Error()
 }
 
 func (h *networkConnectionHandler) OnAuthKeyboardInteractive(
@@ -134,25 +143,66 @@ func (h *networkConnectionHandler) OnAuthKeyboardInteractive(
 		instruction string,
 		questions sshserver.KeyboardInteractiveQuestions,
 	) (answers sshserver.KeyboardInteractiveAnswers, err error),
-) (response sshserver.AuthResponse, reason error) {
-	if h.behavior == BehaviorPassthroughOnUnavailable {
-		return h.backend.OnAuthKeyboardInteractive(username, challenge)
+	clientVersion string,
+) (response sshserver.AuthResponse, metadata map[string]string, reason error) {
+	if h.authContext != nil {
+		h.authContext.OnDisconnect()
 	}
-	return sshserver.AuthResponseUnavailable, log.UserMessage(
-		EUnsupported,
-		"keyboard-interactive authentication not available",
-		"Keyboard-interactive authentication is not supported by ContainerSSH.",
-	).Label("connectionId", h.connectionID).Label("username", username)
+	authContext := h.authClient.KeyboardInteractive(username,
+		func(instruction string, questions auth.KeyboardInteractiveQuestions) (
+			answers auth.KeyboardInteractiveAnswers,
+			err error,
+		) {
+			q := make(sshserver.KeyboardInteractiveQuestions, len(questions))
+			for i, question := range questions {
+				q[i] = sshserver.KeyboardInteractiveQuestion(question)
+			}
+			a, err := challenge(instruction, q)
+			if err != nil {
+				return auth.KeyboardInteractiveAnswers{}, err
+			}
+			answers = auth.KeyboardInteractiveAnswers{
+				Answers: make(map[string]string, len(questions)),
+			}
+			for i, question := range questions {
+				ans, err := a.Get(q[i])
+				if err != nil {
+					ans = ""
+				}
+				answers.Answers[question.ID] = ans
+			}
+			return answers, nil
+		}, h.connectionID, h.ip)
+	h.authContext = authContext
+	if !authContext.Success() {
+		if authContext.Error() != nil {
+			if h.behavior == BehaviorPassthroughOnUnavailable {
+				return h.backend.OnAuthKeyboardInteractive(username, challenge, clientVersion)
+			}
+			return sshserver.AuthResponseUnavailable, authContext.Metadata(), authContext.Error()
+		}
+		if h.behavior == BehaviorPassthroughOnFailure {
+			return h.backend.OnAuthKeyboardInteractive(username, challenge, clientVersion)
+		}
+		return sshserver.AuthResponseFailure, authContext.Metadata(), authContext.Error()
+	}
+	if h.behavior == BehaviorPassthroughOnSuccess {
+		return h.backend.OnAuthKeyboardInteractive(username, challenge, clientVersion)
+	}
+	return sshserver.AuthResponseSuccess, authContext.Metadata(), authContext.Error()
 }
 
 func (h *networkConnectionHandler) OnHandshakeFailed(reason error) {
 	h.backend.OnHandshakeFailed(reason)
 }
 
-func (h *networkConnectionHandler) OnHandshakeSuccess(username string) (connection sshserver.SSHConnectionHandler, failureReason error) {
-	return h.backend.OnHandshakeSuccess(username)
+func (h *networkConnectionHandler) OnHandshakeSuccess(username string, clientVersion string, metadata map[string]string) (connection sshserver.SSHConnectionHandler, failureReason error) {
+	return h.backend.OnHandshakeSuccess(username, clientVersion, metadata)
 }
 
 func (h *networkConnectionHandler) OnDisconnect() {
+	if h.authContext != nil {
+		h.authContext.OnDisconnect()
+	}
 	h.backend.OnDisconnect()
 }
